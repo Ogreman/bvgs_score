@@ -1,70 +1,72 @@
 import csv, itertools
 
-events = []
-players = []
-exp = []
-multiplier = []
+LEVELS = list(range(1, 25))
+PLAYERS = dict()
+BASE_EXP = 100
 
-levels = []
-exp_table = []
+class Player(object):
 
-exp_table.append(100)
-for i in range(1,25):
-	levels.append(i)
-	exp_table.append(int(exp_table[i-1]+(100*(i/1.5))))
-	#print(exp_table[i] - exp_table[i-1])
+	def __init__(self, name):
+		self.name = name
+		self.multiplier = 1.0
+		self.exp = 0
+		self.level = 0
+		self.req_exp = 0
 
-print('Levels:')
-print(levels)
-print('Total EXP needed:')
-print(exp_table)
+	def attend_event(self):
+		self.exp += self.next_amount
 
+	def increase_multiplier(self):
+		self.multiplier *= 1.1
 
-with open('input', 'r') as attendance_list:
-	an_event = csv.reader(attendance_list, delimiter=',')
+	def check_level(self, exp_table):
+		for level, exp in enumerate(exp_table):
+			self.req_exp = exp - self.exp
+			if exp > self.exp:
+				self.level = level
+				break
 
-	for line in an_event:
-		events.append(line)
+	@property
+	def next_amount(self):
+		return int(BASE_EXP * self.multiplier)
 
-
-
-count = 1
-for event in events:
-	
-	#print(event)
-
-	for player_name in itertools.islice(event,1,len(event)):
-		player_name = player_name.strip()
-
-		if player_name not in players:
-			players.append(player_name)
-			exp.extend([0])
-			multiplier.extend([0])
-			multiplier[players.index(player_name)] = 1.0
-
-		if player_name in events[count-2]:
-			multiplier[players.index(player_name)] *= 1.1
-
-		exp[players.index(player_name)] += int(100 * multiplier[players.index(player_name)])
-
-	count += 1
-
-print('\nSCORES:')
-for i in range(len(players)):
-	current_player = players[i]
-	current_exp = exp[i]
-	current_multiplier = round(multiplier[i],2)
-
-	j = 0
-	while True:
-		if exp_table[j] > exp[i]:
-			current_level = levels[j-1]
-			to_next_level = exp_table[j] - exp[i]
-			break
-		j += 1
+	def __str__(self):
+		return self.name
 
 
-	print(current_player + ': Level ' + str(current_level) + ' - ' + str(current_exp)
-		+ 'XP - (to next: ' + str(to_next_level) + 'XP)'
-		+ ' -- Attending next event will earn ' 
-		+ str(int(100 * (multiplier[players.index(current_player)] * 1.1))) + ' XP!')
+def get_exp_table():
+	exp_table = [100]
+	for i in LEVELS:
+		exp_table.append(int(exp_table[i-1] + 100 * (i / 1.5)))
+	return exp_table
+
+
+def read_events(input='input'):
+	with open('input', 'r') as attendance_list:
+		events = [line for line in csv.reader(attendance_list, delimiter=',')]
+	return events
+
+
+def check_attendance(events):
+	for count, event in enumerate(events):
+		for player_name in itertools.islice(event, 1, len(event)):
+			player_name = player_name.strip()
+			if player_name not in PLAYERS:
+				PLAYERS[player_name] = Player(player_name)
+			if player_name in events[count - 1]:
+				PLAYERS[player_name].increase_multiplier()
+			PLAYERS[player_name].attend_event()
+
+
+if __name__ == '__main__':
+	exp_table = get_exp_table()
+	print('Levels: {}'.format(LEVELS))
+	print('Total EXP needed: {}'.format(exp_table))
+	events = read_events()
+	check_attendance(events)
+
+	print('\nSCORES:')
+
+	for player in PLAYERS.values():
+		player.check_level(exp_table)
+		print('{player}: Level {player.level} - {player.exp}XP - (to next: {player.req_exp}XP) -- Attending next event will earn {player.next_amount}XP!'.format(player=player))
