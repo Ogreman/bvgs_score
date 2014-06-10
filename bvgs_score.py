@@ -29,6 +29,7 @@ class Player(object):
 			if exp > self.exp:
 				self.level = level
 				break
+		return self.level
 
 	@property
 	def next_amount(self):
@@ -71,6 +72,5 @@ if __name__ == '__main__':
 
 	print('\nSCORES:')
 
-	for player in PLAYERS.values():
-		player.check_level(exp_table)
+	for player in sorted(PLAYERS.values(), key=lambda x: x.check_level(exp_table)):
 		print('{player}: Level {player.level} - {player.exp}XP - (to next: {player.req_exp}XP) -- Attending next event will earn {player.next_amount}XP!'.format(player=player))
