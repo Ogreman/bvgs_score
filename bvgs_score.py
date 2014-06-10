@@ -4,18 +4,16 @@ LEVELS = list(range(1, 25))
 PLAYERS = dict()
 BASE_EXP = 100
 
-class ExpError(Exception):
-	pass
-
 
 class Player(object):
 
-	def __init__(self, name):
+	def __init__(self, name, exp_table):
 		self.name = name
 		self.multiplier = 1.0
 		self.exp = 0
-		self.level = 0
+		self._level = 0
 		self.req_exp = 0
+		self._exp_table = exp_table
 
 	def attend_event(self):
 		self.exp += self.next_amount
@@ -23,13 +21,14 @@ class Player(object):
 	def increase_multiplier(self):
 		self.multiplier *= 1.1
 
-	def check_level(self, exp_table):
-		for level, exp in enumerate(exp_table):
+	@property
+	def level(self):
+		for level, exp in enumerate(self._exp_table):
 			self.req_exp = exp - self.exp
 			if exp > self.exp:
-				self.level = level
+				self._level = level
 				break
-		return self.level
+		return self._level
 
 	@property
 	def next_amount(self):
@@ -52,12 +51,12 @@ def read_events(input='input'):
 	return events
 
 
-def check_attendance(events):
+def check_attendance(events, exp_table):
 	for count, event in enumerate(events):
 		for player_name in itertools.islice(event, 1, len(event)):
 			player_name = player_name.strip()
 			if player_name not in PLAYERS:
-				PLAYERS[player_name] = Player(player_name)
+				PLAYERS[player_name] = Player(player_name, exp_table)
 			if player_name in events[count - 1]:
 				PLAYERS[player_name].increase_multiplier()
 			PLAYERS[player_name].attend_event()
@@ -68,9 +67,9 @@ if __name__ == '__main__':
 	print('Levels: {}'.format(LEVELS))
 	print('Total EXP needed: {}'.format(exp_table))
 	events = read_events()
-	check_attendance(events)
+	check_attendance(events, exp_table)
 
 	print('\nSCORES:')
 
-	for player in sorted(PLAYERS.values(), key=lambda x: x.check_level(exp_table)):
+	for player in sorted(PLAYERS.values(), key=lambda x: x.level):
 		print('{player}: Level {player.level} - {player.exp}XP - (to next: {player.req_exp}XP) -- Attending next event will earn {player.next_amount}XP!'.format(player=player))
