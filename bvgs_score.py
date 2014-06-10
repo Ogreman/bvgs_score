@@ -4,6 +4,10 @@ LEVELS = list(range(1, 25))
 PLAYERS = dict()
 BASE_EXP = 100
 
+class ExpError(Exception):
+	pass
+
+
 class Player(object):
 
 	def __init__(self, name):
@@ -35,9 +39,9 @@ class Player(object):
 
 
 def get_exp_table():
-	exp_table = [100]
+	exp_table = [BASE_EXP]
 	for i in LEVELS:
-		exp_table.append(int(exp_table[i-1] + 100 * (i / 1.5)))
+		exp_table.append(int(exp_table[i-1] + BASE_EXP * (i / 1.5)))
 	return exp_table
 
 
